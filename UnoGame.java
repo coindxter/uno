@@ -2,7 +2,7 @@ public class UnoGame {
 
     private Card current;
 
-    // ---------- STRATEGIES AS LAMBDAS ----------
+    
 
     private final Strategy matchAny = (CPUPlayer p) -> {
         for (Card c : p.getHand()) {
@@ -31,7 +31,7 @@ public class UnoGame {
         return null;
     };
 
-    // ---------- HELPER ----------
+
 
     private boolean isPlayable(Card c) {
         if (c.getColor() == Color.WILD) return true;
@@ -39,7 +39,7 @@ public class UnoGame {
                 || c.getValue() == current.getValue();
     }
 
-    // ---------- TEST METHOD ----------
+    
 
     public void testCPUStrategies() {
 
