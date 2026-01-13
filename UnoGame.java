@@ -2,8 +2,11 @@ public class UnoGame {
 
     private Card current;
 
+<<<<<<< HEAD
     
 
+=======
+>>>>>>> 985d57d (gfhn)
     private final Strategy matchAny = (CPUPlayer p) -> {
         for (Card c : p.getHand()) {
             if (isPlayable(c)) {
@@ -31,16 +34,22 @@ public class UnoGame {
         return null;
     };
 
+<<<<<<< HEAD
 
 
+=======
+>>>>>>> 985d57d (gfhn)
     private boolean isPlayable(Card c) {
         if (c.getColor() == Color.WILD) return true;
         return c.getColor() == current.getColor()
                 || c.getValue() == current.getValue();
     }
 
+<<<<<<< HEAD
     
 
+=======
+>>>>>>> 985d57d (gfhn)
     public void testCPUStrategies() {
 
         Deck deck = new Deck();
@@ -51,17 +60,21 @@ public class UnoGame {
         CPUPlayer cpu1 = new CPUPlayer("CPU 1", matchAny);
         CPUPlayer cpu2 = new CPUPlayer("CPU 2", matchColor);
         CPUPlayer cpu3 = new CPUPlayer("CPU 3", matchValue);
+        CPUPlayer cpu4 = new CPUPlayer("CPU 4", matchAny);
 
         for (int i = 0; i < 7; i++) {
             cpu1.draw(deck.draw());
             cpu2.draw(deck.draw());
             cpu3.draw(deck.draw());
+            cpu4.draw(deck.draw());
         }
 
         testCPU(cpu1);
         testCPU(cpu2);
         testCPU(cpu3);
+        testCPU(cpu4);
     }
+
 
     private void testCPU(CPUPlayer cpu) {
         System.out.println("\n" + cpu.getName());

@@ -1,7 +1,7 @@
 import java.util.ArrayList;
 import java.util.Collections;
 
-public class Deck {
+public final class Deck {
     private final ArrayList<Card> cards;
 
     public Deck() {
