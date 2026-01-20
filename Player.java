@@ -28,6 +28,11 @@ public class Player {
         }
     }
 
+    public boolean removeFromHand(Card card) {
+        return hand.remove(card);
+    }
+
+
     public void showHand() {
         System.out.println(name + "'s hand:");
         for (Card c : hand) {

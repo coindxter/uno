@@ -1,46 +1,34 @@
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Scanner;
 import java.util.Set;
 
 public class UnoGame {
 
     private Card current;
-
-    private final Set<Card> validPlays = new HashSet<>();
-
     private Color activeColor = null;
 
+    private final Set<Card> validPlays = new HashSet<>();
+    private final List<Player> players = new ArrayList<>();
+    private int currentPlayerIndex = 0;
 
-    private final Strategy matchAny = (CPUPlayer p) -> {
-        for (Card c : validPlays) {
-            return c; 
-        }
-        return null;
-    };
+    private final Scanner scanner = new Scanner(System.in);
 
-    private final Strategy matchColor = (CPUPlayer p) -> {
-        Color colorToMatch = (activeColor != null) ? activeColor : current.getColor();
+    public void addPlayer(Player player) {
+        players.add(player);
+    }
 
-        for (Card c : validPlays) {
-            if (c.getColor() == colorToMatch || c.getColor() == Color.WILD) {
-                return c;
-            }
-        }
-        return null;
-    };
+    private Player getCurrentPlayer() {
+        return players.get(currentPlayerIndex);
+    }
 
-    private final Strategy matchValue = (CPUPlayer p) -> {
-        for (Card c : validPlays) {
-            if (c.getValue() == current.getValue() || c.getColor() == Color.WILD) {
-                return c;
-            }
-        }
-        return null;
-    };
-
+    private void nextPlayer() {
+        currentPlayerIndex = (currentPlayerIndex + 1) % players.size();
+    }
 
     private void recalcValidPlays(Player player) {
         validPlays.clear();
-
         Color colorToMatch = (activeColor != null) ? activeColor : current.getColor();
 
         for (Card c : player.getHand()) {
@@ -52,70 +40,112 @@ public class UnoGame {
 
     private boolean isPlayable(Card c, Color colorToMatch) {
         if (c.getColor() == Color.WILD) return true;
-
         if (c.getColor() == colorToMatch) return true;
-
         return c.getValue() == current.getValue();
     }
 
-    public void testCPUStrategies() {
+    public void start() {
         Deck deck = new Deck();
+
         current = deck.draw();
-        activeColor = null; 
+        activeColor = null;
 
         System.out.println("Starting card: " + current);
 
-        CPUPlayer cpu1 = new CPUPlayer("CPU 1", Difficulty.EASY);
-        CPUPlayer cpu2 = new CPUPlayer("CPU 2", Difficulty.MEDIUM);
-        CPUPlayer cpu3 = new CPUPlayer("CPU 3", Difficulty.HARD);
-        CPUPlayer cpu4 = new CPUPlayer("CPU 4", Difficulty.EASY);
+        addPlayer(new Player("Owen"));
 
-
-        for (int i = 0; i < 7; i++) {
-            cpu1.draw(deck.draw());
-            cpu2.draw(deck.draw());
-            cpu3.draw(deck.draw());
-            cpu4.draw(deck.draw());
+        for (Player p : players) {
+            for (int i = 0; i < 7; i++) {
+                p.draw(deck.draw());
+            }
         }
 
-        testCPU(cpu1, deck);
-        testCPU(cpu2, deck);
-        testCPU(cpu3, deck);
-        testCPU(cpu4, deck);
+        while (true) {
+            Player player = getCurrentPlayer();
+
+            System.out.println("\n--- Your Turn ---");
+            System.out.println("Current card: " + current);
+            if (activeColor != null) {
+                System.out.println("Active color: " + activeColor);
+            }
+
+            player.showHand();
+            recalcValidPlays(player);
+
+            if (validPlays.isEmpty()) {
+                System.out.println("No valid plays. Drawing a card...");
+                player.draw(deck.draw());
+                recalcValidPlays(player);
+            }
+
+            playHumanTurn(player, deck);
+
+            if (player.getHandSize() == 0) {
+                System.out.println("You Won");
+                break;
+            }
+
+            nextPlayer();
+        }
     }
 
-    private void testCPU(CPUPlayer cpu, Deck deck) {
-        System.out.println("\n" + cpu.getName());
-        cpu.showHand();
+    private void playHumanTurn(Player player, Deck deck) {
+        while (true) {
+            System.out.println("\nChoose a card index to play (-1 to draw):");
 
-        recalcValidPlays(cpu);
+            List<Card> hand = player.getHand();
+            for (int i = 0; i < hand.size(); i++) {
+                System.out.println(i + ": " + hand.get(i));
+            }
 
-        System.out.println("Valid plays: " + validPlays);
+            int choice = scanner.nextInt();
 
-        if (validPlays.isEmpty()) {
-            System.out.println("No valid plays. Drawing a card...");
-            cpu.draw(deck.draw());
+            if (choice == -1) {
+                player.draw(deck.draw());
+                return;
+            }
 
-            recalcValidPlays(cpu);
-            System.out.println("Valid plays after draw: " + validPlays);
-        }
+            if (choice < 0 || choice >= hand.size()) {
+                System.out.println("Invalid index.");
+                continue;
+            }
 
-        Card played = cpu.playCard();
+            Card chosen = hand.get(choice);
 
-        if (played == null) {
-            System.out.println("Played: null (no move)");
+            if (!validPlays.contains(chosen)) {
+                System.out.println("That card can't be played.");
+                continue;
+            }
+
+            player.removeFromHand(chosen);
+            current = chosen;
+
+            if (chosen.getColor() == Color.WILD) {
+                activeColor = chooseColor();
+            } else {
+                activeColor = null;
+            }
+
+            System.out.println("You played: " + chosen);
             return;
         }
+    }
 
-        System.out.println("Played: " + played);
+    private Color chooseColor() {
+        System.out.println("Choose a color:");
+        System.out.println("0: RED");
+        System.out.println("1: YELLOW");
+        System.out.println("2: GREEN");
+        System.out.println("3: BLUE");
 
-        current = played;
+        int choice = scanner.nextInt();
 
-        if (played.getColor() == Color.WILD) {
-            activeColor = Color.RED;
-            System.out.println("Wild played — activeColor set to " + activeColor);
-        } else {
-            activeColor = null;
-        }
+        return switch (choice) {
+            case 0 -> Color.RED;
+            case 1 -> Color.YELLOW;
+            case 2 -> Color.GREEN;
+            case 3 -> Color.BLUE;
+            default -> Color.RED;
+        };
     }
 }

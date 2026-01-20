@@ -8,7 +8,7 @@ public class Client {
             PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
             Scanner scanner = new Scanner(System.in)) {
 
-
+                
             System.out.println("Connected");
             while(true) {
                 String input = scanner.nextLine();
