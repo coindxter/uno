@@ -5,7 +5,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 
 
-public class Server {
+public class ServerExample {
     public static void main(String[] args) {
         try (ServerSocket server = new ServerSocket(5555)) {
             System.out.println("Server running on port 5555... Waiting for client.");
