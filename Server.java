@@ -7,7 +7,7 @@ import java.net.Socket;
 
 public class Server {
     public static void main(String[] args) {
-        try (ServerSocket server = new ServerSocket(5556)) {
+        try (ServerSocket server = new ServerSocket(5555)) {
             System.out.println("Server running on port 5555... Waiting for client.");
            
             try (Socket client = server.accept();
