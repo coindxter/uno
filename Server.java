@@ -75,27 +75,71 @@ public class Server {
     }
 
     private static String requireStarted(UnoGameEngine game, String ok) {
-        return game.isStarted() ? ok : "ERROR You must JOIN first";
+        if (game.isStarted()) {
+            return ok;
+        } else {
+            return "ERROR You must JOIN first";
+        }
     }
 
     private static String join(UnoGameEngine game, String msg, String[] parts) {
-        if (parts.length < 2) return "ERROR Usage: JOIN <name>";
-        if (game.isStarted()) return "ERROR Game already started";
+        if (parts.length < 2) {
+            return "ERROR Usage: JOIN <name>";
+        }
 
-        String name = msg.substring(msg.indexOf(' ') + 1).trim();
+        if (game.isStarted()) {
+            return "ERROR Game already started";
+        }
+
+        String name = "";
+
+        int spaceIndex = msg.indexOf(" ");
+        if (spaceIndex != -1) {
+            name = msg.substring(spaceIndex + 1);
+            name = name.trim();
+        }
+
+        if (name.length() == 0) {
+            return "ERROR Name cannot be empty";
+        }
+
         game.startSinglePlayer(name);
+
         return game.renderStateAndHand();
     }
 
     private static String play(UnoGameEngine game, String[] parts) {
-        if (parts.length != 2) return "ERROR Usage: PLAY <index>";
-        int idx = Integer.parseInt(parts[1]);
-        return game.playIndex(idx).toWireString();
+        if (parts.length != 2) {
+            return "ERROR Usage: PLAY <index>";
+        }
+
+        int index;
+
+        try {
+            index = Integer.parseInt(parts[1]);
+        } catch (Exception e) {
+            return "ERROR That is not a number";
+        }
+
+        return game.playIndex(index).toWireString();
     }
 
+
     private static String chooseColor(UnoGameEngine game, String[] parts) {
-        if (parts.length != 2) return "ERROR Usage: COLOR <RED|YELLOW|GREEN|BLUE>";
-        Color c = Color.valueOf(parts[1].toUpperCase());
-        return game.chooseColor(c).toWireString();
+        if (parts.length != 2) {
+            return "ERROR Usage: COLOR <RED|YELLOW|GREEN|BLUE>";
+        }
+
+        String colorStr = parts[1].toUpperCase();
+        Color color;
+
+        try {
+            color = Color.valueOf(colorStr);
+        } catch (Exception e) {
+            return "ERROR Not a valid color";
+        }
+
+        return game.chooseColor(color).toWireString();
     }
+
 }
