@@ -42,7 +42,7 @@ public class Server {
 
     private static void sendWelcome(PrintWriter out) {
         out.println("WELCOME UNO");
-        out.println("Type: JOIN <yourName>");
+        out.println("First please join. Type: JOIN <yourName>");
         out.println("Commands: HAND | STATE | PLAY <index> | DRAW | COLOR <RED|YELLOW|GREEN|BLUE> | QUIT");
     }
 
@@ -123,7 +123,6 @@ public class Server {
 
         return game.playIndex(index).toWireString();
     }
-
 
     private static String chooseColor(UnoGameEngine game, String[] parts) {
         if (parts.length != 2) {

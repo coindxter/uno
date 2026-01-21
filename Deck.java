@@ -49,4 +49,17 @@ public final class Deck {
     public int size() {
         return cards.size();
     }
+
+    public Card drawStartingCard() {
+
+        Card top = draw();
+        while (!(top instanceof NumberCard)) {
+        cards.add(0, top); 
+        shuffle();
+        top = draw();
+    }
+
+    return top;
+    }
+
 }

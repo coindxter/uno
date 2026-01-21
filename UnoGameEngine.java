@@ -42,7 +42,8 @@ public class UnoGameEngine {
     }
 
     public void startSinglePlayer(String playerName) {
-        this.deck = new Deck();
+        this.deck = new Deck(); 
+        this.current = deck.drawStartingCard();
         this.player = new Player(playerName);
 
         this.current = deck.draw();
@@ -76,17 +77,17 @@ public class UnoGameEngine {
             awaitingWildColor = true;
             activeColor = null;
             recalcValidPlays(); 
-            return ok("Played WILD. Now choose a color: COLOR RED/YELLOW/GREEN/BLUE");
+            return ok("Choose a color: COLOR RED/YELLOW/GREEN/BLUE");
         } else {
             activeColor = null;
             recalcValidPlays();
         }
 
         if (player.getHandSize() == 0) {
-            return ok("You played " + chosen + " and WON! 🎉");
+            return ok("You played " + chosen + " and WON! ");
         }
 
-        return ok("You played " + chosen);
+        return ok("Next players turn");
     }
 
     public Result draw() {
@@ -132,7 +133,7 @@ public class UnoGameEngine {
     public String renderState() {
         if (!started) return "STATE Not started";
         StringBuilder sb = new StringBuilder();
-        sb.append("STATE current=").append(current);
+        sb.append("Top Card: ").append(current);
         if (activeColor != null) sb.append(" activeColor=").append(activeColor);
         if (awaitingWildColor) sb.append(" awaitingColor=true");
         return sb.toString();
@@ -141,7 +142,7 @@ public class UnoGameEngine {
     public String renderHand() {
         if (!started) return "HAND Not started";
         StringBuilder sb = new StringBuilder();
-        sb.append("HAND ").append(player.getName()).append(" cards=").append(player.getHandSize()).append("\n");
+        sb.append("Your Hand").append("\n");/* .append(player.getName()).append(" cards=").append(player.getHandSize()).append("\n");*/
 
         List<Card> hand = player.getHand();
         for (int i = 0; i < hand.size(); i++) {
