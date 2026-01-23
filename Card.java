@@ -32,4 +32,9 @@ public abstract class Card {
     public String toString() {
         return color + " " + value;
     }
+
+    public CardEffect effect() {
+        return CardEffect.none();
+    }
+
 }

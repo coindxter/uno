@@ -3,8 +3,8 @@ import java.util.Map;
 
 public class CPUPlayer extends Player {
 
-    private Strategy strategy;
-    private Difficulty difficulty;
+    private final Strategy strategy;
+    private final Difficulty difficulty;
 
     private static final Map<Difficulty, Strategy> STRATEGY_MAP =
             new EnumMap<>(Difficulty.class);

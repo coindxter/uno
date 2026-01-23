@@ -4,6 +4,9 @@ public class Player {
 
     private final String name;
     private final ArrayList<Card> hand;
+    public boolean awaitingWildColor = false;
+    public Card pendingWild = null;
+
 
     public Player(String name) {
         this.name = name;

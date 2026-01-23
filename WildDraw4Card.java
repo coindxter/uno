@@ -15,6 +15,7 @@ public class WildDraw4Card extends Card implements IsWildCard, IsAttackCard {
     }
 
     @Override
-    public void play() {
+    public CardEffect effect() {
+        return new CardEffect(false, false, 4, true); 
     }
 }

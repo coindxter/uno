@@ -10,6 +10,7 @@ public class WildCard extends Card implements IsWildCard {
     }
 
     @Override
-    public void play() {
+    public CardEffect effect() {
+        return new CardEffect(false, false, 0, true); 
     }
 }

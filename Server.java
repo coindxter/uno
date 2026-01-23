@@ -7,138 +7,113 @@ import java.net.Socket;
 public class Server {
 
     private static final int PORT = 5555;
+    private static final UnoGameEngine game = new UnoGameEngine(); 
 
     public static void main(String[] args) {
         try (ServerSocket server = new ServerSocket(PORT)) {
-            System.out.println("UNO Server running on port " + PORT + "... Waiting for client.");
+            System.out.println("Server running on port " + PORT);
 
-            try (Socket client = server.accept();
-                 BufferedReader in = new BufferedReader(new InputStreamReader(client.getInputStream()));
-                 PrintWriter out = new PrintWriter(client.getOutputStream(), true)) {
-
-                System.out.println("Client connected: " + client.getInetAddress());
-
-                UnoGameEngine game = new UnoGameEngine();
-                sendWelcome(out);
-
-                String msg;
-                while ((msg = in.readLine()) != null) {
-                    msg = msg.trim();
-                    if (msg.isEmpty()) continue;
-
-                    sendLines(out, handleMessage(game, msg));
-
-                    if (msg.equalsIgnoreCase("QUIT")) {
-                        out.println("BYE");
-                        break;
-                    }
-                }
+            while (true) {
+                Socket client = server.accept();
+                new Thread(() -> handleClient(client)).start();
             }
         } catch (Exception e) {
             System.err.println("Server error: " + e.getMessage());
-            e.printStackTrace();
         }
     }
 
-    private static void sendWelcome(PrintWriter out) {
-        out.println("WELCOME UNO");
-        out.println("First please join. Type: JOIN <yourName>");
-        out.println("Commands: HAND | STATE | PLAY <index> | DRAW | COLOR <RED|YELLOW|GREEN|BLUE> | QUIT");
+    private static void handleClient(Socket client) {
+        try (
+            Socket c = client;
+            BufferedReader in = new BufferedReader(new InputStreamReader(c.getInputStream()));
+            PrintWriter out = new PrintWriter(c.getOutputStream(), true)
+        ) {
+            out.println("JOIN <name> | START (start the game) | HAND | STATE | PLAY <i> | DRAW | COLOR <c> | QUIT");
+            out.println("Welcome");
+
+            UnoGameEngine.PlayerSession session = null;
+
+            String msg;
+            while ((msg = in.readLine()) != null) {
+                msg = msg.trim();
+                if (msg.isEmpty()) continue;
+
+                String response;
+                synchronized (game) {
+                    response = handle(msg, out, session);
+                }
+
+                if (response.startsWith("SESSION ")) {
+                    String[] lines = response.split("\n", 2);
+                    String sessionId = lines[0].substring("SESSION ".length()).trim();
+                    session = game.getSession(sessionId);
+                    response = (lines.length > 1) ? lines[1] : "";
+                }
+
+                out.println("BEGIN");
+                for (String line : response.split("\n")) out.println(line);
+                out.println("END");
+
+                if (msg.equalsIgnoreCase("QUIT")) break;
+            }
+        } catch (Exception ignored) {}
     }
 
-    private static void sendLines(PrintWriter out, String response) {
-        for (String line : response.split("\n")) {
-            out.println(line);
-        }
-    }
-
-    private static String handleMessage(UnoGameEngine game, String msg) {
+    private static String handle(String msg, PrintWriter out, UnoGameEngine.PlayerSession session) {
         String[] parts = msg.split("\\s+");
         String cmd = parts[0].toUpperCase();
 
-        try {
-            return switch (cmd) {
-                case "JOIN" -> join(game, msg, parts);
-                case "STATE" -> requireStarted(game, game.renderState());
-                case "HAND"  -> requireStarted(game, game.renderHand());
-                case "PLAY"  -> requireStarted(game, play(game, parts));
-                case "DRAW"  -> requireStarted(game, game.draw().toWireString());
-                case "COLOR" -> requireStarted(game, chooseColor(game, parts));
-                case "QUIT"  -> "INFO Quitting...";
-                default      -> "ERROR Unknown command: " + cmd;
-            };
-        } catch (IllegalArgumentException e) {
-            return "ERROR " + e.getMessage();
-        } catch (Exception e) {
-            return "ERROR Server exception: " + e.getMessage();
-        }
+        return switch (cmd) {
+            case "JOIN"  -> join(msg, out);
+            case "START" -> (session == null) ? "ERROR JOIN first" : game.startGame().toWireString();
+            case "HAND"  -> (session == null) ? "ERROR JOIN first" : game.renderHand(session);
+            case "STATE" -> (session == null) ? "ERROR JOIN first" : game.renderState(session);
+            case "PLAY"  -> (session == null) ? "ERROR JOIN first" : play(session, parts).toWireString();
+            case "DRAW"  -> (session == null) ? "ERROR JOIN first" : game.draw(session).toWireString();
+            case "COLOR" -> (session == null) ? "ERROR JOIN first" : color(session, parts).toWireString();
+            case "QUIT"  -> "OK Bye";
+            default      -> "ERROR Unknown command";
+        };
     }
 
-    private static String requireStarted(UnoGameEngine game, String ok) {
-        if (game.isStarted()) {
-            return ok;
-        } else {
-            return "ERROR You must JOIN first";
-        }
+    private static String join(String msg, PrintWriter out) {
+        int sp = msg.indexOf(' ');
+        if (sp < 0) return "ERROR Usage: JOIN <name>";
+
+        String name = msg.substring(sp + 1).trim();
+        if (name.isEmpty()) return "ERROR Name cannot be empty";
+
+        UnoGameEngine.JoinResult jr = game.join(name, out);
+        if (!jr.result.ok) return jr.result.toWireString();
+
+        return "SESSION " + jr.sessionId + "\n" + jr.result.toWireString();
     }
 
-    private static String join(UnoGameEngine game, String msg, String[] parts) {
-        if (parts.length < 2) {
-            return "ERROR Usage: JOIN <name>";
-        }
-
-        if (game.isStarted()) {
-            return "ERROR Game already started";
-        }
-
-        String name = "";
-
-        int spaceIndex = msg.indexOf(" ");
-        if (spaceIndex != -1) {
-            name = msg.substring(spaceIndex + 1);
-            name = name.trim();
-        }
-
-        if (name.length() == 0) {
-            return "ERROR Name cannot be empty";
-        }
-
-        game.startSinglePlayer(name);
-
-        return game.renderStateAndHand();
-    }
-
-    private static String play(UnoGameEngine game, String[] parts) {
+    private static UnoGameEngine.Result play(UnoGameEngine.PlayerSession session, String[] parts) {
         if (parts.length != 2) {
-            return "ERROR Usage: PLAY <index>";
+            return new UnoGameEngine.Result(false, "Usage: PLAY <index>", game.renderState(session), game.renderHand(session));
         }
 
-        int index;
-
+        int idx;
         try {
-            index = Integer.parseInt(parts[1]);
-        } catch (Exception e) {
-            return "ERROR That is not a number";
+            idx = Integer.parseInt(parts[1]);
+        } catch (NumberFormatException e) {
+            return new UnoGameEngine.Result(false, "Not a number", game.renderState(session), game.renderHand(session));
         }
 
-        return game.playIndex(index).toWireString();
+        return game.playIndex(session, idx);
     }
 
-    private static String chooseColor(UnoGameEngine game, String[] parts) {
+    private static UnoGameEngine.Result color(UnoGameEngine.PlayerSession session, String[] parts) {
         if (parts.length != 2) {
-            return "ERROR Usage: COLOR <RED|YELLOW|GREEN|BLUE>";
+            return new UnoGameEngine.Result(false, "Usage: COLOR <RED|YELLOW|GREEN|BLUE>", game.renderState(session), game.renderHand(session));
         }
-
-        String colorStr = parts[1].toUpperCase();
-        Color color;
 
         try {
-            color = Color.valueOf(colorStr);
+            Color c = Color.valueOf(parts[1].toUpperCase());
+            return game.chooseColor(session, c);
         } catch (Exception e) {
-            return "ERROR Not a valid color";
+            return new UnoGameEngine.Result(false, "Not a valid color", game.renderState(session), game.renderHand(session));
         }
-
-        return game.chooseColor(color).toWireString();
     }
-
 }

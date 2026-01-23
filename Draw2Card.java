@@ -10,6 +10,7 @@ public class Draw2Card extends Card implements IsAttackCard {
     }
 
     @Override
-    public void play() {
+    public CardEffect effect() {
+        return new CardEffect(false, false, 2, true); 
     }
 }
